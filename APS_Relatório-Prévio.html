@@ -635,7 +635,7 @@ pns_2019 |&gt;
 ## 17 Pensionista                                               16
 ## 18 Empregado(a) doméstico(a)                                137
 ## 19 Parente do(a) empregado(a) doméstico(a)                   19</code></pre>
-<pre class="r"><code>pns_2019 &lt;- pns_2019 %&gt;%
+<pre class="r"><code>pns_2019 &lt;- pns_2019 |&gt; 
   mutate(tipo_mulher = case_when(
     C004 == &quot;Cônjuge ou companheiro(a) de sexo diferente&quot; &amp; C006 == &quot;Mulher&quot; ~ &quot;conjuge_mulher&quot;,
     C004 == &quot;Pessoa responsável pelo domicílio&quot; &amp; C006 == &quot;Mulher&quot; ~ &quot;responsavel_mulher&quot;,
@@ -649,47 +649,47 @@ pns_2019 |&gt;
 ## 1 conjuge_mulher      35838
 ## 2 responsavel_mulher  46804
 ## 3 &lt;NA&gt;               196740</code></pre>
-<pre class="r"><code>domicilios_conjuge_mulher &lt;- pns_2019 %&gt;%
-  filter(tipo_mulher == &quot;conjuge_mulher&quot;) %&gt;%
-  pull(domic_id) %&gt;%
+<pre class="r"><code>domicilios_conjuge_mulher &lt;- pns_2019 |&gt; 
+  filter(tipo_mulher == &quot;conjuge_mulher&quot;) |&gt; 
+  pull(domic_id) |&gt; 
   unique()
 
-domicilios_responsavel_mulher &lt;- pns_2019 %&gt;%
-  filter(tipo_mulher == &quot;responsavel_mulher&quot;) %&gt;%
-  pull(domic_id) %&gt;%
+domicilios_responsavel_mulher &lt;- pns_2019 |&gt; 
+  filter(tipo_mulher == &quot;responsavel_mulher&quot;) |&gt; 
+  pull(domic_id) |&gt; 
   unique()
 
-filhos_por_domicilio &lt;- pns_2019 %&gt;%
+filhos_por_domicilio &lt;- pns_2019 |&gt; 
   filter(C004 %in% c(
     &quot;Filho(a) somente do cônjuge&quot;, 
     &quot;Filho(a) somente do responsável&quot;, 
     &quot;Filho(a) do responsável e do cônjuge&quot;
-  )) %&gt;%
+  )) |&gt; 
   mutate(tipo_filho = case_when(
     C004 == &quot;Filho(a) somente do cônjuge&quot; ~ &quot;filho_do_conjuge&quot;,
     C004 == &quot;Filho(a) somente do responsável&quot; ~ &quot;filho_do_responsavel&quot;,
     C004 == &quot;Filho(a) do responsável e do cônjuge&quot; ~ &quot;filho_dos_dois&quot;
-  )) %&gt;%
-  group_by(domic_id) %&gt;%
+  )) |&gt; 
+  group_by(domic_id) |&gt; 
   summarise(
     filho_do_conjuge = any(tipo_filho == &quot;filho_do_conjuge&quot;),
     filho_do_responsavel = any(tipo_filho == &quot;filho_do_responsavel&quot;),
     filho_dos_dois = any(tipo_filho == &quot;filho_dos_dois&quot;)
   )
 
-domicilios_validos_conjuge &lt;- filhos_por_domicilio %&gt;%
-  filter(filho_do_conjuge == TRUE) %&gt;%
-  filter(domic_id %in% domicilios_conjuge_mulher) %&gt;%
+domicilios_validos_conjuge &lt;- filhos_por_domicilio |&gt; 
+  filter(filho_do_conjuge == TRUE) |&gt; 
+  filter(domic_id %in% domicilios_conjuge_mulher) |&gt; 
   pull(domic_id)
 
-domicilios_validos_responsavel &lt;- filhos_por_domicilio %&gt;%
-  filter(filho_do_responsavel == TRUE) %&gt;%
-  filter(domic_id %in% domicilios_responsavel_mulher) %&gt;%
+domicilios_validos_responsavel &lt;- filhos_por_domicilio |&gt; 
+  filter(filho_do_responsavel == TRUE) |&gt; 
+  filter(domic_id %in% domicilios_responsavel_mulher) |&gt; 
   pull(domic_id)
 
 domicilios_validos_final &lt;- union(domicilios_validos_conjuge, domicilios_validos_responsavel)
 
-pns_2019_filtrado &lt;- pns_2019 %&gt;%
+pns_2019_filtrado &lt;- pns_2019 |&gt; 
   filter(domic_id %in% domicilios_validos_final)
 
 pns_2019_filtrado |&gt; 
@@ -698,29 +698,29 @@ pns_2019_filtrado |&gt;
 <div id="identificação-dos-casos-de-gravidez-na-adolescência" class="section level2" number="5.3">
 <h2><span class="header-section-number">5.3</span> Identificação dos
 Casos de Gravidez na Adolescência</h2>
-<pre class="r"><code>maes &lt;- pns_2019_filtrado %&gt;%
+<pre class="r"><code>maes &lt;- pns_2019_filtrado |&gt; 
   filter(C004 %in% c(&quot;Pessoa responsável pelo domicílio&quot;, &quot;Cônjuge ou companheiro(a) de sexo diferente&quot;),
-         C006 == &quot;Mulher&quot;) %&gt;%
+         C006 == &quot;Mulher&quot;) |&gt; 
   select(domic_id, idade_mae = C008)
 
-filhos &lt;- pns_2019_filtrado %&gt;%
-  filter(C004 %in% c(&quot;Filho(a) somente do responsável&quot;, &quot;Filho(a) somente do cônjuge&quot;, &quot;Filho(a) do responsável e do cônjuge&quot;)) %&gt;%
+filhos &lt;- pns_2019_filtrado |&gt; 
+  filter(C004 %in% c(&quot;Filho(a) somente do responsável&quot;, &quot;Filho(a) somente do cônjuge&quot;, &quot;Filho(a) do responsável e do cônjuge&quot;)) |&gt; 
   select(domic_id, idade_filho = C008)
 
 maes_filhos &lt;- left_join(filhos, maes, by = &quot;domic_id&quot;)
 
-maes_filhos &lt;- maes_filhos %&gt;%
+maes_filhos &lt;- maes_filhos |&gt; 
   mutate(diferenca_idade = idade_mae - idade_filho)
 
-tipo_gravidez_por_domicilio &lt;- maes_filhos %&gt;%
-  group_by(domic_id) %&gt;%
+tipo_gravidez_por_domicilio &lt;- maes_filhos |&gt; 
+  group_by(domic_id) |&gt; 
   summarise(
     gravidez_adolescencia = any(diferenca_idade &lt; 18),
     .groups = &quot;drop&quot;
-  ) %&gt;%
+  ) |&gt; 
   mutate(
     tipo_gravidez = ifelse(gravidez_adolescencia, &quot;gravidez_adolescência&quot;, &quot;gravidez_regular&quot;)
-  ) %&gt;%
+  ) |&gt; 
   select(domic_id, tipo_gravidez)
 
 pns_2019_filtrado &lt;- pns_2019_filtrado |&gt; 
@@ -747,7 +747,7 @@ Nacional</h2>
 <p>Nesta seção, apresentamos a proporção nacional de casos de gravidez
 na adolescência e gravidez regular identificados na amostra da PNS 2019,
 por meio de um gráfico de pizza.</p>
-<pre class="r"><code>pp_gravidez &lt;- pp_gravidez %&gt;%
+<pre class="r"><code>pp_gravidez &lt;- pp_gravidez |&gt; 
   mutate(
     tipo_gravidez = case_when(
       tipo_gravidez == &quot;gravidez_adolescência&quot; ~ &quot;Gravidez na Adolescência&quot;,
@@ -788,9 +788,9 @@ ggplot(pp_gravidez, aes(x = &quot;&quot;, y = pp, fill = tipo_gravidez)) +
 <div id="proporção-por-unidade-federativa" class="section level2" number="6.2">
 <h2><span class="header-section-number">6.2</span> Proporção por Unidade
 Federativa</h2>
-<pre class="r"><code>dados_gravidez_uf &lt;- pns_2019_filtrado %&gt;%
-  filter(!is.na(tipo_gravidez)) %&gt;%
-  group_by(V0001) %&gt;% # V0001 é a UF na PNS
+<pre class="r"><code>dados_gravidez_uf &lt;- pns_2019_filtrado |&gt; 
+  filter(!is.na(tipo_gravidez)) |&gt; 
+  group_by(V0001) |&gt; 
   summarise(
     gravidez_adolescencia = sum(tipo_gravidez == &quot;gravidez_adolescência&quot;),
     gravidez_total = n(),
@@ -804,12 +804,12 @@ dados_gravidez_uf &lt;- dados_gravidez_uf |&gt;
     V0001 == &quot;Rio de Janeiro&quot; ~ &quot;Rio De Janeiro&quot;,
     V0001 == &quot;Rio Grande do Sul&quot; ~ &quot;Rio Grande Do Sul&quot;,
     V0001 == &quot;Mato Grosso do Sul&quot; ~ &quot;Mato Grosso Do Sul&quot;,
-    TRUE ~ V0001  # Mantém o resto como está
+    TRUE ~ V0001  
   ))
 
-mapa_ufs &lt;- read_state(code_state = &quot;all&quot;, year = 2020)  # &quot;all&quot; pega todos os estados</code></pre>
+mapa_ufs &lt;- read_state(code_state = &quot;all&quot;, year = 2020)  </code></pre>
 <pre><code>## Using year/date 2020</code></pre>
-<pre class="r"><code>mapa_gravidez &lt;- mapa_ufs %&gt;%
+<pre class="r"><code>mapa_gravidez &lt;- mapa_ufs |&gt; 
   left_join(dados_gravidez_uf, by = c(&quot;name_state&quot; = &quot;V0001&quot;))
 
 # Plotar o mapa
